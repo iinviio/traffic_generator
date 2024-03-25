@@ -30,7 +30,7 @@ def get_random_edges(num_nodes):
 
     return edges
 
-# Get yaml file for a n equal containers connected 
+# Get yaml file for a n equal containers connected
 # according a specific set of edges
 def get_yaml(num_nodes, edges):
     buffer = "services:\n"
