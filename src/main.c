@@ -26,10 +26,6 @@ typedef struct Packet {
     payload_t payload;
 } Packet;
 
-/*2sec window must keep about 200 packets*/
-Packet* packet_window;/*points to the first packet of the list of received packets*/
-int pw_len = 0;/*packet_window current length */
-
 Packet prepare_packet();
 
 int generate_traffic(int ms, int time, int sock, struct sockaddr_in* addr, socklen_t* addrlen);/*generate traffic every 'ms' milliseconds*/
@@ -137,8 +133,6 @@ int main(int argc, char* argv[]) {
     /*
     print every sec report of received pkts as follow "1: 10, 2: 008, 3: 015, 4: 085, ..., 10: 100"
     */
-
-    if(packet_window){free(packet_window);}
 
     return 0;
 }
