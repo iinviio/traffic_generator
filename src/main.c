@@ -129,7 +129,6 @@ int main(int argc, char* argv[]) {
 
     // Traffic generator
     /*send a packet every 10ms, for 20 seconds*/
-    puts("generate traffic");
     generate_traffic(10, 20, sock, &addr, &addrlen);
 
     // Broadcaster
@@ -159,25 +158,22 @@ Packet prepare_packet(){/*generate a message. I keep track of the messages for t
 
 int generate_traffic(int ms, int time, int sock, struct sockaddr_in* addr, socklen_t* addrlen){/*generate traffic every 'ms' milliseconds for 'time' sec*/
 
-    printf("NODE %d LOG : PREPARING PACKETS...", id);
-    Packet total_traffic[100*time];
-
-    /*every second this node should generate 100 packets. so in 20 seconds we will have generated 2000 packets*/
-    for(int i = 0; i < 100*time; i++){
-
-        total_traffic[i] = prepare_packet();
-    }
-
-    int k = 0; /*total_traffic index*/
     int ret;
     for(int i = 0; i < time; i++){
 
+        Packet total_traffic[100];
+
         for(int j = 0; j < 100; j++){
 
-            ret = sendto(sock, &total_traffic[k++], sizeof(Packet), 0, (const struct sockaddr*) addr, (socklen_t) sizeof(*addr));
+            total_traffic[j] = prepare_packet();
+        }
+
+        for(int j = 0; j < 100; j++){
+
+            ret = sendto(sock, &total_traffic[j], sizeof(Packet), 0, (const struct sockaddr*) addr, (socklen_t) sizeof(*addr));
             if(ret == -1){/*no need of flags, hence the 0 in the arguments*/
     
-                puts("sendto error");
+                perror("sendto error ");
                 return -1;
             }
 
@@ -194,15 +190,19 @@ int broadcaster(int sock, struct sockaddr_in* addr, socklen_t* addrlen){
     int buflen = 100;
     Packet buffer[buflen]; /*i expect to read about 100 packets*/
 
-    int ret;
+    int ret, actual_buflen = buflen;/*actual_buflen is the amount of packet actually read*/
     for(int i = 0; i < buflen; i++){
 
         ret = recvfrom(sock, &buffer[i], sizeof(Packet), 0 , (struct sockaddr*) addr, addrlen);
-        //printf("received %d packets\n", i);
 
         if(ret == -1){
 
-            puts("recvfrom error");
+            if(errno == EAGAIN){/*there is no data to read in the buffer*/
+
+                break;
+            }
+
+            perror("recvfrom error ");
             return -1;
         }
 
@@ -210,9 +210,11 @@ int broadcaster(int sock, struct sockaddr_in* addr, socklen_t* addrlen){
 
             break;
         }
+
+        actual_buflen = i;
     }
 
-    traffic_analyzer(buffer, buflen);
+    traffic_analyzer(buffer, actual_buflen);
 }
 
 /*len is the length of the buffer*/
